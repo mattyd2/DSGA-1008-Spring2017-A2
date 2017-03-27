@@ -117,9 +117,11 @@ def evaluate(data_source):
         hidden = repackage_hidden(hidden)
     return total_loss[0] / len(data_source)
 
+train_results = {"type": "train", "epoch": [], "batch": [], "lr": [],
+                 "time": [], "loss": [], "ppl": []}
+
 
 def train():
-    train_results = {"type": "train"}
     total_loss = 0
     start_time = time.time()
     ntokens = len(corpus.dictionary)
@@ -145,12 +147,12 @@ def train():
                     'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch, len(train_data) // args.bptt, lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
-            train_results["epoch"] = epoch
-            train_results["batch"] = batch
-            train_results["lr"] = lr
-            train_results["time"] = elapsed * 1000 / args.log_interval
-            train_results["loss"] = cur_loss
-            train_results["ppl"] = math.exp(cur_loss)
+            train_results["epoch"].append(epoch)
+            train_results["batch"].append(batch)
+            train_results["lr"].append(lr)
+            train_results["time"].append(elapsed * 1000 / args.log_interval)
+            train_results["loss"].append(cur_loss)
+            train_results["ppl"].append(math.exp(cur_loss))
             total_loss = 0
             start_time = time.time()
 
@@ -158,7 +160,7 @@ def train():
 # Loop over epochs.
 lr = args.lr
 prev_val_loss = None
-val_results = {"type": "val"}
+val_results = {"type": "val", "epoch": [], "time": [], "loss": [], "ppl": []}
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
@@ -168,10 +170,10 @@ for epoch in range(1, args.epochs+1):
             'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                        val_loss, math.exp(val_loss)))
     print('-' * 89)
-    val_results["epoch"] = epoch
-    val_results["time"] = time.time() - epoch_start_time
-    val_results["loss"] = val_loss
-    val_results["ppl"] = math.exp(val_loss)
+    val_results["epoch"].append(epoch)
+    val_results["time"].append(time.time() - epoch_start_time)
+    val_results["loss"].append(val_loss)
+    val_results["ppl"].append(math.exp(val_loss))
     # Anneal the learning rate.
     if prev_val_loss and val_loss > prev_val_loss:
         lr /= 4
