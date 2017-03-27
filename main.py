@@ -156,6 +156,7 @@ def train():
             total_loss = 0
             start_time = time.time()
 
+train_ = pd.DataFrame(train_results)
 
 # Loop over epochs.
 lr = args.lr
@@ -179,6 +180,7 @@ for epoch in range(1, args.epochs+1):
         lr /= 4
     prev_val_loss = val_loss
 
+val_ = pd.DataFrame(val_results)
 
 # Run on test data and save the model.
 test_loss = evaluate(test_data)
@@ -188,9 +190,11 @@ print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
 print('=' * 89)
 test_results = {"type": "test", "loss": test_loss, "ppl": math.exp(test_loss)}
 today = "_".join(str(datetime.date.today()).split("-"))
-df = pd.DataFrame([test_results, train_results, val_results])
+test_ = pd.DataFrame(test_results)
+df = pd.concat([train_, val_, test_], axis=1)
 file_name = today + "_results.csv"
 df.to_csv(file_name)
+import ipdb; ipdb.set_trace()
 # if args.save != '':
 #     with open(args.save, 'wb') as f:
 #         torch.save(model, f)
