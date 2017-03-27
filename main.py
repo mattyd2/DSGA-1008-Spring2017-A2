@@ -25,7 +25,7 @@ parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=1,
+parser.add_argument('--epochs', type=int, default=6,
                     help='upper epoch limit')
 parser.add_argument('--batch-size', type=int, default=20, metavar='N',
                     help='batch size')
@@ -117,7 +117,7 @@ def evaluate(data_source):
         hidden = repackage_hidden(hidden)
     return total_loss[0] / len(data_source)
 
-train_results = {"type": ["train"], "epoch": [], "batch": [], "lr": [],
+train_results = {"type": [], "epoch": [], "batch": [], "lr": [],
                  "time": [], "loss": [], "ppl": []}
 
 
@@ -157,13 +157,9 @@ def train():
             total_loss = 0
             start_time = time.time()
 
-train_ = pd.DataFrame(train_results)
-print(train_.head())
-
 # Loop over epochs.
 lr = args.lr
 prev_val_loss = None
-val_results = {"type": "val", "epoch": [], "time": [], "loss": [], "ppl": []}
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
@@ -173,18 +169,19 @@ for epoch in range(1, args.epochs+1):
             'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                        val_loss, math.exp(val_loss)))
     print('-' * 89)
-    val_results["epoch"].append(epoch)
-    val_results["time"].append(time.time() - epoch_start_time)
-    val_results["loss"].append(val_loss)
-    val_results["ppl"].append(math.exp(val_loss))
-    val_results["type"].append("val")
+    train_results["epoch"].append(epoch)
+    train_results["batch"].append("Nan")
+    train_results["lr"].append("Nan")
+    train_results["time"].append(time.time() - epoch_start_time)
+    train_results["loss"].append(val_loss)
+    train_results["ppl"].append(math.exp(val_loss))
+    train_results["type"].append("val")
     # Anneal the learning rate.
     if prev_val_loss and val_loss > prev_val_loss:
         lr /= 4
     prev_val_loss = val_loss
 
-val_ = pd.DataFrame(val_results)
-print(val_.head())
+train_ = pd.DataFrame(train_results)
 
 # Run on test data and save the model.
 test_loss = evaluate(test_data)
@@ -192,13 +189,18 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
-test_results = {"type": "test", "loss": test_loss, "ppl": math.exp(test_loss)}
+train_results["epoch"].append("Nan")
+train_results["batch"].append("Nan")
+train_results["lr"].append("Nan")
+train_results["time"].append("Nan")
+train_results["loss"].append(test_loss)
+train_results["ppl"].append(math.exp(test_loss))
+train_results["type"].append("test")
+ 
 today = "_".join(str(datetime.date.today()).split("-"))
-test_ = pd.DataFrame(test_results)
-df = pd.concat([train_, val_, test_], axis=1)
-file_name = today + "_results.csv"
+df = pd.DataFrame(train_results)
+file_name = args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
-import ipdb; ipdb.set_trace()
 # if args.save != '':
 #     with open(args.save, 'wb') as f:
 #         torch.save(model, f)
