@@ -1,5 +1,7 @@
 import argparse
 import time
+import datetime
+import pandas as pd
 import math
 import torch
 import torch.nn as nn
@@ -23,7 +25,7 @@ parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=6,
+parser.add_argument('--epochs', type=int, default=1,
                     help='upper epoch limit')
 parser.add_argument('--batch-size', type=int, default=20, metavar='N',
                     help='batch size')
@@ -57,6 +59,7 @@ def batchify(data, bsz):
     return data
 
 eval_batch_size = 10
+print("Batchifying data...")
 train_data = batchify(corpus.train, args.batch_size)
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
@@ -66,6 +69,7 @@ test_data = batchify(corpus.test, eval_batch_size)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
+print("Instantiating Model...")
 model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers)
 if args.cuda:
     model.cuda()
@@ -115,6 +119,7 @@ def evaluate(data_source):
 
 
 def train():
+    train_results = {"type": "train"}
     total_loss = 0
     start_time = time.time()
     ntokens = len(corpus.dictionary)
@@ -140,6 +145,12 @@ def train():
                     'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch, len(train_data) // args.bptt, lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
+            train_results["epoch"] = epoch
+            train_results["batch"] = batch
+            train_results["lr"] = lr
+            train_results["time"] = elapsed * 1000 / args.log_interval
+            train_results["loss"] = cur_loss
+            train_results["ppl"] = math.exp(cur_loss)
             total_loss = 0
             start_time = time.time()
 
@@ -147,6 +158,7 @@ def train():
 # Loop over epochs.
 lr = args.lr
 prev_val_loss = None
+val_results = {"type": "val"}
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
@@ -156,6 +168,10 @@ for epoch in range(1, args.epochs+1):
             'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                        val_loss, math.exp(val_loss)))
     print('-' * 89)
+    val_results["epoch"] = epoch
+    val_results["time"] = time.time() - epoch_start_time
+    val_results["loss"] = val_loss
+    val_results["ppl"] = math.exp(val_loss)
     # Anneal the learning rate.
     if prev_val_loss and val_loss > prev_val_loss:
         lr /= 4
@@ -168,6 +184,11 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
-if args.save != '':
-    with open(args.save, 'wb') as f:
-        torch.save(model, f)
+test_results = {"type": "test", "loss": test_loss, "ppl": math.exp(test_loss)}
+today = "_".join(str(datetime.date.today()).split("-"))
+df = pd.DataFrame([test_results, train_results, val_results])
+file_name = today + "_results.csv"
+df.to_csv(file_name)
+# if args.save != '':
+#     with open(args.save, 'wb') as f:
+#         torch.save(model, f)

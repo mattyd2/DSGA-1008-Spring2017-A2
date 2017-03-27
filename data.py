@@ -24,6 +24,7 @@ class Corpus(object):
         self.test = self.tokenize(os.path.join(path, 'test.txt'))
 
     def tokenize(self, path):
+        print("Tokenizing Data...")
         """Tokenizes a text file."""
         assert os.path.exists(path)
         # Add words to the dictionary
@@ -36,6 +37,7 @@ class Corpus(object):
                     self.dictionary.add_word(word)
 
         # Tokenize file content
+        print("Vectorizing Data...")
         with open(path, 'r') as f:
             ids = torch.LongTensor(tokens)
             token = 0
