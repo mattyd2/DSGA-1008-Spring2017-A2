@@ -117,7 +117,7 @@ def evaluate(data_source):
         hidden = repackage_hidden(hidden)
     return total_loss[0] / len(data_source)
 
-train_results = {"type": "train", "epoch": [], "batch": [], "lr": [],
+train_results = {"type": ["train"], "epoch": [], "batch": [], "lr": [],
                  "time": [], "loss": [], "ppl": []}
 
 
@@ -153,10 +153,12 @@ def train():
             train_results["time"].append(elapsed * 1000 / args.log_interval)
             train_results["loss"].append(cur_loss)
             train_results["ppl"].append(math.exp(cur_loss))
+            train_results["type"].append("train")
             total_loss = 0
             start_time = time.time()
 
 train_ = pd.DataFrame(train_results)
+print(train_.head())
 
 # Loop over epochs.
 lr = args.lr
@@ -175,12 +177,14 @@ for epoch in range(1, args.epochs+1):
     val_results["time"].append(time.time() - epoch_start_time)
     val_results["loss"].append(val_loss)
     val_results["ppl"].append(math.exp(val_loss))
+    val_results["type"].append("val")
     # Anneal the learning rate.
     if prev_val_loss and val_loss > prev_val_loss:
         lr /= 4
     prev_val_loss = val_loss
 
 val_ = pd.DataFrame(val_results)
+print(val_.head())
 
 # Run on test data and save the model.
 test_loss = evaluate(test_data)
