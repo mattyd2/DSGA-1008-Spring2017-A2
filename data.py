@@ -1,6 +1,7 @@
 import os
 import torch
 
+
 class Dictionary(object):
     def __init__(self):
         self.word2idx = {}
@@ -46,5 +47,4 @@ class Corpus(object):
                 for word in words:
                     ids[token] = self.dictionary.word2idx[word]
                     token += 1
-
         return ids

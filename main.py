@@ -74,6 +74,8 @@ model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers
 if args.cuda:
     model.cuda()
 
+print("type(model.encoder)", type(model.encoder))
+
 criterion = nn.CrossEntropyLoss()
 
 ###############################################################################
@@ -130,7 +132,7 @@ def train():
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         # zero grad
         optimizer.zero_grad()
-	# model.zero_grad()
+        # model.zero_grad()
         # get data
         data, targets = get_batch(train_data, i)
         hidden = repackage_hidden(hidden)
@@ -144,9 +146,9 @@ def train():
             p.data.add_(-clipped_lr, p.grad.data)
 
         # take step
-        # optimizer.step()
+        optimizer.step()
 
-	total_loss += loss.data
+        total_loss += loss.data
 
         if batch % args.log_interval == 0 and batch > 0:
             cur_loss = total_loss[0] / args.log_interval
