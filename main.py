@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from sklearn.utils import shuffle
 from torch.autograd import Variable
-from torch.optim import Adam
+from torch.optim import ASGD
 import data
 import model
 
@@ -127,7 +127,7 @@ def train():
     start_time = time.time()
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(args.batch_size)
-    optimizer = Adam(model.parameters(), lr=lr)
+    optimizer = ASGD(model.parameters(), lr=lr)
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         # zero grad
         optimizer.zero_grad()
@@ -209,7 +209,7 @@ train_results["type"].append("test")
  
 today = "_".join(str(datetime.date.today()).split("-"))
 df = pd.DataFrame(train_results)
-file_name = "Adam_drp0.75_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
+file_name = "ASGD_drp0.75_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
 # if args.save != '':
 #     with open(args.save, 'wb') as f:
