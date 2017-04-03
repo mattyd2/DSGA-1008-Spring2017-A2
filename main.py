@@ -5,6 +5,7 @@ import pandas as pd
 import math
 import torch
 import torch.nn as nn
+from sklearn.utils import shuffle
 from torch.autograd import Variable
 from torch.optim import Adam
 import data
@@ -171,6 +172,7 @@ prev_val_loss = None
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
+    train_data = shuffle(train_data)
     val_loss = evaluate(val_data)
     print('-' * 89)
     print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -186,7 +188,7 @@ for epoch in range(1, args.epochs+1):
     train_results["type"].append("val")
     # Anneal the learning rate.
     if prev_val_loss and val_loss > prev_val_loss:
-        lr /= 4
+        lr /= 4.0
     prev_val_loss = val_loss
 
 train_ = pd.DataFrame(train_results)
@@ -207,7 +209,7 @@ train_results["type"].append("test")
  
 today = "_".join(str(datetime.date.today()).split("-"))
 df = pd.DataFrame(train_results)
-file_name = "Adam_0.5_gut_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
+file_name = "Adam_drp0.75_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
 # if args.save != '':
 #     with open(args.save, 'wb') as f:
