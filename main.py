@@ -5,7 +5,6 @@ import pandas as pd
 import math
 import torch
 import torch.nn as nn
-from sklearn.utils import shuffle
 from torch.autograd import Variable
 from torch.optim import ASGD
 import data
@@ -128,7 +127,7 @@ def train():
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(args.batch_size)
     optimizer = ASGD(model.parameters(), lr=lr)
-    for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
+    for batch, i in enumerate(range(0, len(train_data) - 1, args.bptt)):
         # zero grad
         optimizer.zero_grad()
 	# model.zero_grad()
@@ -172,7 +171,6 @@ prev_val_loss = None
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
-    train_data = shuffle(train_data)
     val_loss = evaluate(val_data)
     print('-' * 89)
     print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
