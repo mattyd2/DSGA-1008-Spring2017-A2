@@ -6,7 +6,7 @@ import math
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from torch.optim import Adam
+from torch.optim import ASGD
 import data
 import model
 
@@ -128,8 +128,8 @@ def train():
     start_time = time.time()
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(args.batch_size)
-    optimizer = Adam(model.parameters(), lr=lr)
-    for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
+    optimizer = ASGD(model.parameters(), lr=lr)
+    for batch, i in enumerate(range(0, len(train_data) - 1, args.bptt)):
         # zero grad
         optimizer.zero_grad()
         # model.zero_grad()
@@ -188,7 +188,7 @@ for epoch in range(1, args.epochs+1):
     train_results["type"].append("val")
     # Anneal the learning rate.
     if prev_val_loss and val_loss > prev_val_loss:
-        lr /= 4
+        lr /= 4.0
     prev_val_loss = val_loss
 
 train_ = pd.DataFrame(train_results)
@@ -209,7 +209,7 @@ train_results["type"].append("test")
  
 today = "_".join(str(datetime.date.today()).split("-"))
 df = pd.DataFrame(train_results)
-file_name = "Adam_0.5_gut_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
+file_name = "ASGD_drp0.75_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
 # if args.save != '':
 #     with open(args.save, 'wb') as f:
