@@ -7,12 +7,12 @@ class RNNModel(nn.Module):
 
     def __init__(self, rnn_type, ntoken, ninp, nhid, nlayers, dropout=0.5, tie_weights=False):
         super(RNNModel, self).__init__()
-	self.drop = nn.Dropout(dropout)
+        self.drop = nn.Dropout(dropout)
         self.encoder = nn.Embedding(ntoken, ninp)
         self.rnn = getattr(nn, rnn_type)(ninp, nhid, nlayers, bias=False, dropout=0.75)
         self.decoder = nn.Linear(nhid, ntoken)
 
-	if tie_weights:
+        if tie_weights:
             if nhid != ninp:
                 raise ValueError('When using the tied flag, nhid must be equal to emsize')
             self.decoder.weight = self.encoder.weight
@@ -32,7 +32,7 @@ class RNNModel(nn.Module):
     def forward(self, input, hidden):
         emb = self.drop(self.encoder(input))
         output, hidden = self.rnn(emb, hidden)
-	output = self.drop(output)
+        output = self.drop(output)
         decoded = self.decoder(output.view(output.size(0)*output.size(1), output.size(2)))
         return decoded.view(output.size(0), output.size(1), decoded.size(1)), hidden
 

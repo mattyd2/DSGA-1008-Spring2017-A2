@@ -9,6 +9,7 @@ from torch.autograd import Variable
 from torch.optim import Adam
 import data
 import model
+import json
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='./data/penn',
@@ -77,8 +78,6 @@ print("Instantiating Model...")
 model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied)
 if args.cuda:
     model.cuda()
-
-print("type(model.encoder)", type(model.encoder))
 
 criterion = nn.CrossEntropyLoss()
 
@@ -177,6 +176,9 @@ prev_val_loss = None
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
+    if args.save != '':
+        with open(args.save, 'wb') as f:
+            json.dump(model.encoder.weight.data, outfile)
     val_loss = evaluate(val_data)
     print('-' * 89)
     print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -203,9 +205,8 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
-if args.save != '':
-    with open(args.save, 'wb') as f:
-        json.dump(data, outfile)
+with open("word_emb.json", 'wb') as outfile:
+    json.dump(model.encoder.weight.data.numpy().tolist(), outfile)
 train_results["epoch"].append("Nan")
 train_results["batch"].append("Nan")
 train_results["lr"].append("Nan")
@@ -213,11 +214,10 @@ train_results["time"].append("Nan")
 train_results["loss"].append(test_loss)
 train_results["ppl"].append(math.exp(test_loss))
 train_results["type"].append("test")
- 
 today = "_".join(str(datetime.date.today()).split("-"))
 df = pd.DataFrame(train_results)
 file_name = "Adam_drp0.65_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
-# if args.save != '':
-#     with open(args.save, 'wb') as f:
-#         torch.save(model, f)
+if args.save != '':
+    with open(args.save, 'wb') as f:
+        torch.save(model, f)
