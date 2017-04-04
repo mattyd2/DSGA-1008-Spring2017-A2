@@ -6,7 +6,7 @@ import math
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from torch.optim import Adam
+from torch.optim import Adam, ASGD
 import data
 import model
 import json
@@ -38,7 +38,7 @@ parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
-parser.add_argument('--save', type=str,  default='model.pt',
+parser.add_argument('--save', type=str,  default='model_ASGD.pt',
                     help='path to save the final model')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
@@ -131,7 +131,7 @@ def train():
     start_time = time.time()
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(args.batch_size)
-    optimizer = Adam(model.parameters(), lr=lr)
+    optimizer = ASGD(model.parameters(), lr=lr)
     for batch, i in enumerate(range(0, len(train_data) - 1, args.bptt)):
         # zero grad
         optimizer.zero_grad()
@@ -176,9 +176,6 @@ prev_val_loss = None
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
-    if args.save != '':
-        with open(args.save, 'wb') as f:
-            json.dump(model.encoder.weight.data, outfile)
     val_loss = evaluate(val_data)
     print('-' * 89)
     print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -205,7 +202,7 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
-with open("word_emb.json", 'wb') as outfile:
+with open("word_emb_ASGD.json", 'wb') as outfile:
     json.dump(model.encoder.weight.data.numpy().tolist(), outfile)
 train_results["epoch"].append("Nan")
 train_results["batch"].append("Nan")
@@ -216,7 +213,7 @@ train_results["ppl"].append(math.exp(test_loss))
 train_results["type"].append("test")
 today = "_".join(str(datetime.date.today()).split("-"))
 df = pd.DataFrame(train_results)
-file_name = "Adam_drp0.65_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
+file_name = "ASGD_drp0.65_ly2_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
 if args.save != '':
     with open(args.save, 'wb') as f:
