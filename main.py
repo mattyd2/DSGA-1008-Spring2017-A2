@@ -5,6 +5,7 @@ import pandas as pd
 import math
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.autograd import Variable
 from torch.optim import Adam, ASGD
 import data
@@ -18,17 +19,17 @@ parser.add_argument('--data', type=str, default='./data/penn',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
-parser.add_argument('--emsize', type=int, default=10,
+parser.add_argument('--emsize', type=int, default=200,
                     help='size of word embeddings')
-parser.add_argument('--nhid', type=int, default=10,
+parser.add_argument('--nhid', type=int, default=200,
                     help='humber of hidden units per layer')
-parser.add_argument('--nlayers', type=int, default=1,
+parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default=0.01,
+parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=30,
+parser.add_argument('--epochs', type=int, default=10,
                     help='upper epoch limit')
 parser.add_argument('--batch-size', type=int, default=20, metavar='N',
                     help='batch size')
@@ -40,7 +41,7 @@ parser.add_argument('--cuda', type=bool, default=False,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
-parser.add_argument('--save', type=str,  default='model_ASGD.pt',
+parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
@@ -179,6 +180,7 @@ train_results = {"type": [], "epoch": [], "batch": [], "lr": [],
 def train():
     total_loss = 0
     start_time = time.time()
+    cur_loss = np.Inf
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(args.batch_size)
     optimizer = ASGD(model.parameters(), lr=lr)
@@ -198,8 +200,7 @@ def train():
             cur_loss = loss.data[0]
         else:
             cur_loss = 0.9 * cur_loss + 0.1 * loss.data[0]
-
-        clip_grad_norm(allparams, args.clip)
+        clip_grad_norm(model.parameters(), args.clip)
 
         # clipped_lr = lr * clip_gradient(model, args.clip)
         # for p in model.parameters():
@@ -268,10 +269,11 @@ train_results["time"].append("Nan")
 train_results["loss"].append(test_loss)
 train_results["ppl"].append(math.exp(test_loss))
 train_results["type"].append("test")
-today = "_".join(str(datetime.date.today()).split("-"))
 df = pd.DataFrame(train_results)
-file_name = "ASGD_drp0.65_ly2_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
+today = "_".join(str(datetime.date.today()).split("-"))
+opt_name = str(optimizer.__class__).split(".")[2]
+file_name = opt_name + "_drp" + str(args.dropout) + "_lyr" + str(args.nlayers) + "_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
-if args.save != '':
-    with open(args.save, 'wb') as f:
-        torch.save(model, f)
+# if args.save != '':
+#     with open(args.save, 'wb') as f:
+#         torch.save(model, f)
