@@ -8,25 +8,27 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch.optim import Adam
 import data
-import model
+from model import RNNModel
 import json
 
+
+# def run():
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='./data/penn',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
-parser.add_argument('--emsize', type=int, default=50,
+parser.add_argument('--emsize', type=int, default=10,
                     help='size of word embeddings')
-parser.add_argument('--nhid', type=int, default=50,
+parser.add_argument('--nhid', type=int, default=10,
                     help='humber of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default=20,
+parser.add_argument('--lr', type=float, default=0.01,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=6,
+parser.add_argument('--epochs', type=int, default=30,
                     help='upper epoch limit')
 parser.add_argument('--batch-size', type=int, default=20, metavar='N',
                     help='batch size')
@@ -34,7 +36,7 @@ parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
-parser.add_argument('--cuda', action='store_true',
+parser.add_argument('--cuda', type=bool, default=False,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
@@ -42,7 +44,7 @@ parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--tied', action='store_true',
+parser.add_argument('--tied', type=bool, default=True,
                     help='tie the word embedding and softmax weights')
 args = parser.parse_args()
 
@@ -52,6 +54,23 @@ torch.manual_seed(args.seed)
 ###############################################################################
 # Load data
 ###############################################################################
+
+# print("args.data", args.data)
+# print("args.model", args.model)
+# print("args.emsize", args.emsize)
+# print("args.nhid", args.nhid)
+# print("args.nlayers", args.nlayers)
+# print("args.lr", args.lr)
+# print("args.clip", args.clip)
+# print("args.epochs", args.epochs)
+# print("args.batch_size", args.batch_size)
+# print("args.bptt", args.bptt)
+# print("args.seed", args.seed)
+# print("args.cuda", args.cuda)
+# print("args.log_interval", args.log_interval)
+# print("args.save", args.save)
+# print("args.dropout", args.dropout)
+# print("args.tied", args.tied)
 
 corpus = data.Corpus(args.data)
 
@@ -75,7 +94,7 @@ test_data = batchify(corpus.test, eval_batch_size)
 
 ntokens = len(corpus.dictionary)
 print("Instantiating Model...")
-model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied)
+model = RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied)
 if args.cuda:
     model.cuda()
 
@@ -85,14 +104,45 @@ criterion = nn.CrossEntropyLoss()
 # Training code
 ###############################################################################
 
-def clip_gradient(model, clip):
-    """Computes a gradient clipping coefficient based on gradient norm."""
-    totalnorm = 0
-    for p in model.parameters():
-        modulenorm = p.grad.data.norm()
-        totalnorm += modulenorm ** 2
-    totalnorm = math.sqrt(totalnorm)
-    return min(1, args.clip / (totalnorm + 1e-6))
+
+# def clip_gradient(model, clip):
+#     """Computes a gradient clipping coefficient based on gradient norm."""
+#     totalnorm = 0
+#     for p in model.parameters():
+#         modulenorm = p.grad.data.norm()
+#         totalnorm += modulenorm ** 2
+#     totalnorm = math.sqrt(totalnorm)
+#     return min(1, args.clip / (totalnorm + 1e-6))
+
+
+def clip_grad_norm(parameters, max_norm, norm_type=2):
+    """Clips gradient norm of an iterable of parameters.
+
+    The norm is computed over all gradients together, as if they were
+    concatenated into a single vector. Gradients are modified in-place.
+
+    Arguments:
+        parameters (Iterable[Variable]): an iterable of Variables that will have
+            gradients normalized
+        max_norm (float or int): max norm of the gradients
+        norm_type (float or int): type of the used p-norm. Can be ``'inf'`` for infinity norm.
+    """
+    parameters = list(parameters)
+    max_norm = float(max_norm)
+    norm_type = float(norm_type)
+    if norm_type == float('inf'):
+        total_norm = max(p.grad.data.abs().max() for p in parameters)
+    else:
+        total_norm = 0
+        for p in parameters:
+            param_norm = p.grad.data.norm(norm_type)
+            total_norm += param_norm ** norm_type
+        total_norm = total_norm ** (1. / norm_type)
+    clip_coef = max_norm / (total_norm + 1e-6)
+    if clip_coef >= 1:
+        return
+    for p in parameters:
+        p.grad.data.mul_(clip_coef)
 
 
 def repackage_hidden(h):
@@ -144,9 +194,16 @@ def train():
         loss = criterion(output.view(-1, ntokens), targets)
         loss.backward()
 
-        clipped_lr = lr * clip_gradient(model, args.clip)
-        for p in model.parameters():
-            p.data.add_(-clipped_lr, p.grad.data)
+        if cur_loss == np.Inf:
+            cur_loss = loss.data[0]
+        else:
+            cur_loss = 0.9 * cur_loss + 0.1 * loss.data[0]
+
+        clip_grad_norm(allparams, args.clip)
+
+        # clipped_lr = lr * clip_gradient(model, args.clip)
+        # for p in model.parameters():
+        #     p.data.add_(-clipped_lr, p.grad.data)
 
         # take step
         optimizer.step()
@@ -176,9 +233,6 @@ prev_val_loss = None
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
     train()
-    if args.save != '':
-        with open(args.save, 'wb') as f:
-            json.dump(model.encoder.weight.data, outfile)
     val_loss = evaluate(val_data)
     print('-' * 89)
     print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
