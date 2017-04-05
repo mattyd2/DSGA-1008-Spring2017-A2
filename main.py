@@ -260,7 +260,7 @@ print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
 with open("word_emb_ASGD.json", 'wb') as outfile:
-    json.dump(model.encoder.weight.data.numpy().tolist(), outfile)
+    json.dump(model.encoder.weight.data.cpu().numpy().tolist(), outfile)
 train_results["epoch"].append("Nan")
 train_results["batch"].append("Nan")
 train_results["lr"].append("Nan")
