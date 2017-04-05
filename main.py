@@ -227,13 +227,15 @@ def train():
             train_results["type"].append("train")
             total_loss = 0
             start_time = time.time()
+    opt_name = str(optimizer.__class__).split(".")[2]
+    return opt_name
 
 # Loop over epochs.
 lr = args.lr
 prev_val_loss = None
 for epoch in range(1, args.epochs+1):
     epoch_start_time = time.time()
-    train()
+    opt_name = train()
     val_loss = evaluate(val_data)
     print('-' * 89)
     print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -271,7 +273,6 @@ train_results["ppl"].append(math.exp(test_loss))
 train_results["type"].append("test")
 df = pd.DataFrame(train_results)
 today = "_".join(str(datetime.date.today()).split("-"))
-opt_name = str(optimizer.__class__).split(".")[2]
 file_name = opt_name + "_drp" + str(args.dropout) + "_lyr" + str(args.nlayers) + "_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
 # if args.save != '':
