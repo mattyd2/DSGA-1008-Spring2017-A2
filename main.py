@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.autograd import Variable
-from torch.optim import Adam, ASGD
+from torch.optim import Adam, ASGD, SGD
 import data
 from model import RNNModel
 import json
@@ -41,7 +41,7 @@ parser.add_argument('--cuda', type=bool, default=False,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
-parser.add_argument('--save', type=str,  default='model.pt',
+parser.add_argument('--save', type=str,  default='model_SGD.pt',
                     help='path to save the final model')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
@@ -183,7 +183,7 @@ def train():
     cur_loss = np.Inf
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(args.batch_size)
-    optimizer = ASGD(model.parameters(), lr=lr)
+    optimizer = SGD(model.parameters(), lr=lr)
     for batch, i in enumerate(range(0, len(train_data) - 1, args.bptt)):
         # zero grad
         optimizer.zero_grad()
@@ -251,7 +251,7 @@ for epoch in range(1, args.epochs+1):
     train_results["type"].append("val")
     # Anneal the learning rate.
     if prev_val_loss and val_loss > prev_val_loss:
-        lr /= 4.0
+        lr /= 3.0
     prev_val_loss = val_loss
 
 train_ = pd.DataFrame(train_results)
@@ -262,7 +262,7 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
-with open("word_emb_ASGD.json", 'wb') as outfile:
+with open("word_emb_SGD.json", 'wb') as outfile:
     json.dump(model.encoder.weight.data.cpu().numpy().tolist(), outfile)
 train_results["epoch"].append("Nan")
 train_results["batch"].append("Nan")
@@ -275,6 +275,6 @@ df = pd.DataFrame(train_results)
 today = "_".join(str(datetime.date.today()).split("-"))
 file_name = opt_name + "_drp" + str(args.dropout) + "_lyr" + str(args.nlayers) + "_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
 df.to_csv(file_name)
-# if args.save != '':
-#     with open(args.save, 'wb') as f:
-#         torch.save(model, f)
+if args.save != '':
+    with open(args.save, 'wb') as f:
+        torch.save(model, f)
