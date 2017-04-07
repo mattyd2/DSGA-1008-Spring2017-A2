@@ -41,7 +41,7 @@ parser.add_argument('--cuda', type=bool, default=False,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
-parser.add_argument('--save', type=str,  default='model_SGD.pt',
+parser.add_argument('--save', type=str,  default='model_Adam_.pt',
                     help='path to save the final model')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
@@ -265,7 +265,7 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
-with open("word_emb_SGD.json", 'wb') as outfile:
+with open("word_emb_Adam.json", 'wb') as outfile:
     json.dump(model.encoder.weight.data.cpu().numpy().tolist(), outfile)
 train_results["epoch"].append("Nan")
 train_results["batch"].append("Nan")
@@ -276,7 +276,7 @@ train_results["ppl"].append(math.exp(test_loss))
 train_results["type"].append("test")
 df = pd.DataFrame(train_results)
 today = "_".join(str(datetime.date.today()).split("-"))
-file_name = opt_name + "_drp" + str(args.dropout) + "_lyr" + str(args.nlayers) + "_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "_results.csv"
+file_name = opt_name + "_drp" + str(args.dropout) + "_lyr" + str(args.nlayers) + "_" + args.model + "_" + str(args.emsize) + "_" + str(args.nhid) + "_" + str(args.nlayers) + "_" + today + "penn_results.csv"
 df.to_csv(file_name)
 if args.save != '':
     with open(args.save, 'wb') as f:

@@ -20,9 +20,9 @@ parser = argparse.ArgumentParser(description='PyTorch PTB Language Model')
 # Model parameters.
 parser.add_argument('--data', type=str, default='./data/penn',
                     help='location of the data corpus')
-parser.add_argument('--checkpoint', type=str, default='./model.pt',
+parser.add_argument('--checkpoint', type=str, default='./model_SGD.pt',
                     help='model checkpoint to use')
-parser.add_argument('--outf', type=str, default='generated.txt',
+parser.add_argument('--outf', type=str, default='generated_SGD.txt',
                     help='output file for generated text')
 parser.add_argument('--words', type=int, default='1000',
                     help='number of words to generate')
@@ -55,7 +55,7 @@ if args.cuda:
 else:
     model.cpu()
 
-corpus = data.Corpus(args.data)
+corpus = data.Corpus(args.data, False)
 ntokens = len(corpus.dictionary)
 print 'vocab size: ', ntokens
 hidden = model.init_hidden(1)
