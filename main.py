@@ -47,6 +47,8 @@ parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--tied', type=bool, default=True,
                     help='tie the word embedding and softmax weights')
+parser.add_argument('--brown', action='store_true',
+                    help='use the brown corpus from nltk')
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
@@ -73,7 +75,7 @@ torch.manual_seed(args.seed)
 # print("args.dropout", args.dropout)
 # print("args.tied", args.tied)
 
-corpus = data.Corpus(args.data)
+corpus = data.Corpus(args.data, args.brown)
 
 def batchify(data, bsz):
     nbatch = data.size(0) // bsz
@@ -86,6 +88,7 @@ def batchify(data, bsz):
 eval_batch_size = 10
 print("Batchifying data...")
 train_data = batchify(corpus.train, args.batch_size)
+print(train_data.size())
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
 
