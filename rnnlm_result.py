@@ -37,7 +37,7 @@ parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
-parser.add_argument('--cuda', type=bool, default=False,
+parser.add_argument('--cuda', type=bool, default=True,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
@@ -186,6 +186,3 @@ print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
 
-
-if __name__ == '__main__':
-    main()
